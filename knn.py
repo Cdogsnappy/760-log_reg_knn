@@ -1,11 +1,12 @@
 import numpy as np
 from operator import itemgetter
 import matplotlib.pyplot as plt
+from sklearn import metrics
 
 k = [5]
 #hyper-parameter
 
-def knn(d, test):
+def knn(d, test):#Takes a test instance and the training data. Returns a tuple describing the results for EVERY k specified in the 'k' list.
     res_vals = []
     dists = getDists(d,test)
     num_labels = 0
@@ -27,7 +28,7 @@ def buildData(f1):
         d.append(list1)
     return d
 
-def five_fold(d,):
+def five_fold(d,):#Runs cross validation on a dataset
     folds = [1000, 2000, 3000, 4000, 5000]
     end_res = []
     for f in folds:
@@ -57,7 +58,8 @@ def five_fold(d,):
                  tp[ind] / (tp[ind] + fp[ind])])
         end_res.append([f, res])
     return end_res
-def q4():
+
+def q4():#RUN WITH k = [1,3,5,7,10] TO GET PROPER RESULTS, takes ~13 minutes
     f = open('emails.csv', 'r')
     d = buildEmails(f)
     end_res = five_fold(d)
@@ -83,7 +85,7 @@ def q4():
 
 
 
-def q1():
+def q1():#constructs a 2d grid and colors based on the nearest neighbor in the dataset
     colors = ['red','blue']
     f = open('D2z.txt', 'r')
     d = np.array(buildData(f))
@@ -98,46 +100,47 @@ def buildEmails(f):
     f.readline()
     for line in f:
         l = line.split(',')
-        list1 = np.array([float(number) for number in l])
+        list1 = np.array([float(number) for number in l[1:]])
         X.append(list1)
     return np.array(X)
 
-def getDists(data, test):
+def getDists(data, test):#Computes the distance of every point in the dataset to the test instance simultaneously
     diffs = np.square([test[0:len(test)-1] - d[0:len(d)-1] for d in data])
     dist = np.sqrt([np.sum(d) for d in diffs])
     return list(zip(dist, data[:, np.shape(data)[1]-1]))
 
 
-def q5():
+def q5():#Attempts to draw the ROC curve for k = 5. Getting a weird result.
     f = open('emails.csv', 'r')
     preds = []
     points = []
+    points.append([0,0])
     d = buildEmails(f)
-    x_test = d[:1000]
+    x_test = d[0:1000]
+    m, n = np.shape(x_test)
     x_train = d[1000:]
-    num_pos = np.sum(x_test[:, len(x_test[0]) - 1])
+    num_pos = np.sum(x_test[:,n-1])
     num_neg = len(x_test) - num_pos
     for x in x_test:
-        preds.append(knn_5(d,x)[0][1])
-    preds = list(zip(x_test[:,len(x_test[0])-1], preds))
-    preds = sorted(preds, key=lambda tup: tup[1])
-    print(preds)
+        preds.append(knn_5(d, x)[0][1])
+    preds = list(zip(x_test[:,n-1], preds))
+    preds = sorted(preds, key=lambda tup: tup[1], reverse=True)
     tp = 0
     fp = 0
     last_tp = 0
-    for i in range(len(x_test)):
-        if i > 1 and preds[i][1] != preds[i - 1][1] and preds[i][0] == 0 and tp > last_tp:
+    for i in range(len(x_test)):#ROC ALGORITHM
+        if i > 0 and preds[i][1] != preds[i - 1][1] and preds[i][0] == 0 and tp > last_tp:
             fpr = fp / num_neg
             tpr = tp / num_pos
-            points.append([tpr, fpr])
+            points.append([fpr, tpr])
             last_tp = tp
         if preds[i][0] == 1:
             tp += 1
         else:
             fp += 1
-        fpr = fp / num_neg
-        tpr = tp / num_pos
-        points.append([tpr, fpr])
+    fpr = fp / num_neg
+    tpr = tp / num_pos
+    points.append([fpr, tpr])
     points = np.array(points)
     plt.plot(points[:, 0], points[:, 1], color='red')
 

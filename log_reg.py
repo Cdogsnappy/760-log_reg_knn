@@ -8,19 +8,19 @@ class LogisticRegression():
     iterations = 300
     alpha = .03
 
-def gradient_descent(L,X,y):
+def gradient_descent(L,X,y):#CALLED ONE TIME, RUNS ENTIRE TRAINING ALGORITHM
     for i in range(L.iterations):
         y_hat = sigmoid(X.dot(L.theta))
         loss = np.reshape((y_hat - y.T),len(y))
         loss = np.dot(X.T,loss)
         L.theta = L.theta  - (L.alpha/len(y))*loss
 
-def predict(L,v):
+def predict(L,v):#Returns predicted label with threshold .5.
     z = sigmoid(v.dot(L.theta))
     y = np.where(z > 0.5, 1, 0)
     return [y, z]
 
-def sigmoid(z):
+def sigmoid(z):#simple sigmoid function.
     return 1/(1 + np.exp(-z))
 
 def buildData(f):
@@ -34,7 +34,7 @@ def buildData(f):
         y.append(float(l[len(l)-1][0]))
     return X,y
 
-def five_fold(L,X,y):
+def five_fold(L,X,y):#Runs cross validation on emails dataset
     folds = [1000,2000,3000,4000,5000]
     for f in folds:
         X_test = X[f-1000:f]
@@ -50,7 +50,7 @@ def five_fold(L,X,y):
         print("Precision: " + str(res[2]))
         print("")
 
-def test_accuracy(L,test_x,test_y):
+def test_accuracy(L,test_x,test_y):#Tests accuracy of a model on a given set test_x,test_y.
     tp = 0
     tn = 0
     fp = 0
@@ -69,7 +69,7 @@ def test_accuracy(L,test_x,test_y):
                 fn += 1
     return [(tp+tn)/(tp+tn+fp+fn), tp/(tp+fn), tp/(tp+fp)]
 
-def q3():
+def q3():#runs cross validation on the dataset for logistic regression
     L = LogisticRegression()
     f = open('emails.csv', 'r')
     X, y = buildData(f)
@@ -81,38 +81,34 @@ def q3():
     gradient_descent(L, X, y)
     five_fold(L, X, y)
 
-def drawCurve(L,test_x,test_y):
+def drawCurve(L,test_x,test_y):#Draws the ROC curve of the model
     points = []
+    points.append([0,0])
     num_pos = np.sum(test_y)
     num_neg = len(test_y)-num_pos
-    print(num_pos)
-    print(num_neg)
     preds = [predict(L,x)[1] for x in test_x]
     preds = list(zip(test_y,preds))
-    preds = sorted(preds, key=lambda tup: tup[1])
+    preds = sorted(preds, key=lambda tup: tup[1],reverse=True)
     tp = 0
     fp = 0
     last_tp = 0
-    for i in range(len(test_y)):
-        if i > 1 and preds[i][1] != preds[i-1][1] and preds[i][0] == 0 and tp > last_tp:
+    for i in range(len(test_y)):#ROC ALGORITHM
+        if i > 0 and preds[i][1] != preds[i-1][1] and preds[i][0] == 0 and tp > last_tp:
             fpr = fp/num_neg
             tpr = tp/num_pos
-            points.append([tpr,fpr])
+            points.append([fpr,tpr])
             last_tp = tp
         if preds[i][0] == 1:
             tp+=1
         else:
             fp+=1
-        fpr = fp / num_neg
-        tpr = tp / num_pos
-        points.append([tpr,fpr])
+    fpr = fp / num_neg
+    tpr = tp / num_pos
+    points.append([fpr, tpr])
     points = np.array(points)
     plt.plot(points[:,0],points[:,1])
-    plt.xlabel("True Positive Rate")
-    plt.ylabel("False Positive Rate")
-    plt.title("ROC Curve")
 
-def q5():
+def q5():#Related to curve drawing
     L = LogisticRegression()
     f = open('emails.csv', 'r')
     X, y = buildData(f)
@@ -126,8 +122,10 @@ def q5():
     y_train = y[1000:]
     gradient_descent(L, X_train, y_train)
     drawCurve(L,X_test,y_test)
-    plt.show()
-    knn.q5()
+    knn.q5()#Draw knn curve
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve")
     plt.show()
 
 def main():
